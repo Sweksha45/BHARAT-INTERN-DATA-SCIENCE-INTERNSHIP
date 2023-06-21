@@ -1,0 +1,74 @@
+import tensorflow as tf
+
+# Load the MNIST dataset
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Preprocess the data
+x_train, x_test = x_train / 255.0, x_test / 255.0
+
+# Build the model
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10)
+])
+
+# Define the loss function and optimizer
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+optimizer = tf.keras.optimizers.Adam()
+
+# Compile the model
+model.compile(optimizer=optimizer, loss=loss_fn, metrics=['accuracy'])
+
+# Train the model
+model.fit(x_train, y_train, epochs=5)
+
+# Evaluate the model
+model.evaluate(x_test, y_test)
+
+# Save the model
+model.save('handwritten_number_model')
+
+import numpy as np
+from PIL import Image
+
+# Load the saved model
+model = tf.keras.models.load_model('handwritten_number_model')
+
+# Define the function to load and preprocess the image
+def load_and_preprocess_image(image_path):
+    # Load the image using PIL
+    image = Image.open(image_path).convert('L')  # Convert to grayscale
+
+    # Resize the image to 28x28 pixels
+    image = image.resize((28, 28))
+
+    # Convert the image to a numpy array
+    image = np.array(image)
+
+    # Invert the image (if necessary)
+    image = np.invert(image)
+
+    # Normalize the image
+    image = image / 255.0
+
+    # Reshape the image to match the input shape of the model
+    image = np.reshape(image, (1, 28, 28))
+
+    return image
+
+# Provide the path to your image
+image_path = '/content/Screenshot 2023-06-20 123824.png'
+
+# Load and preprocess the image
+image = load_and_preprocess_image(image_path)
+
+# Make a prediction
+prediction = model.predict(image)
+
+# Get the predicted digit
+predicted_digit = tf.argmax(prediction, axis=1)
+
+print("Predicted digit:", predicted_digit.numpy())
